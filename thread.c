@@ -12,7 +12,6 @@ int main(void)
     pthread_t th_id[THREAD_NUM];
     int st, i;
     unsigned int check;
-    //unsigned long num = 100000000;
     unsigned long num = 2;
 
     /* スレッドの生成 */
@@ -40,18 +39,6 @@ int main(void)
 }
 
 /* フィボナッチ数の下二桁を求める関数 */
-/* unsigned int fibonacci(unsigned long *n) */
-/* { */
-/*     unsigned long i; */
-/*     unsigned int x  = 1; */
-/*     unsigned int xn = 0; */
-
-/*     for(i = 0; i < *n; i++){ */
-/*         xn = (xn + x) % 100; */
-/*         x = xn; */
-/*     } */
-/*     return xn; */
-/* } */
 unsigned int fibonacci(unsigned long *n)
 {
     unsigned long i;
