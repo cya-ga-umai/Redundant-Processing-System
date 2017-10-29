@@ -16,8 +16,6 @@
 #include "can_lib.h"
 #include "rps.h"
 
-#define MPU_NUM 1
-
 #define ALL_RECEIVED 0x07
 #define BIT_FLAG_0 0x01
 #define BIT_FLAG_1 0x02
@@ -113,7 +111,8 @@ void sync(int socket) {
   int               handle;
   int               rcv_status = 0;
   unsigned char     send_data;
-  canid_t           first_target, second_target;
+  canid_t           first_target = 0;
+  canid_t           second_target = 0;
 
   puts("同期開始");
 
