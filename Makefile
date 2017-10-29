@@ -1,9 +1,32 @@
-thread: thread.o
-	gcc -Wall -O2 -o thread thread.o
+# Makefile
 
-thread.o: thread.c
-	gcc -c thread.c -lpthread
+# プログラム名とオブジェクトファイル名
+PROGRAM = rps
+OBJS = rps.o can_lib.o sample.o
 
-PHONY: check-syntax
-check-syntax:
-	gcc -Wall -fsyntax-only $(CHK_SOURCES) 2>&1 | sed -e 's/警告/warning/' -e 's/エラー/error/'
+# コンパイラの定義
+CC = gcc
+CFLAGS = -Wall -O2 -std=c11 -pthread
+
+# 拡張子の定義
+.SUFFIXES: .c .o
+
+# プライマリターゲット
+$(PROGRAM): $(OBJS)
+	$(CC) $(CFLAGS) -o $(PROGRAM) $(OBJS)
+
+# サフィックスルール
+.c.o:
+	$(CC) $(CFLAGS) -c $<
+
+# 依存ヘッダファイルの設定
+sample.o: can_lib.h
+sample.o: rps.h
+rps.o: can_lib.h
+rps.o: rps.h
+can_lib.o: can_lib.h
+
+# ファイル削除ターゲット
+.PHONY: clean
+clean:
+	$(RM) $(PROGRAM) $(OBJS)
