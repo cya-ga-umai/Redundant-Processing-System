@@ -26,7 +26,7 @@ unsigned int fibonacci(unsigned long n) {
 
 int main(int argc, char **argv) {
   int sock;
-  unsigned int result;
+  unsigned int result[3];
 
   if (argc < 2) {
     puts("MPU番号を入力してください");
@@ -40,8 +40,14 @@ int main(int argc, char **argv) {
   sync(sock);
 
   puts("演算開始");
-  result = fibonacci(400000000);  // そこそこ処理時間のかかる演算
+  result[MPU_NUM - 1] = fibonacci(400000000);  // そこそこ処理時間のかかる演算
   puts("演算終了");
+
+  printf("%d\n", result[MPU_NUM - 1]);
+
+  sync_data(sock, result);
+
+  printf("MPU1: %d, MPU2: %d,MPU3: %d\n", result[0], result[1], result[2]);
 
   close(sock);
 

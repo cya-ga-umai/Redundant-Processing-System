@@ -45,7 +45,8 @@ static unsigned char digit_to_bit(const unsigned int digit);
  * @param[out] second_target  ふたつ目のターゲット
  */
 static void set_target(canid_t *first_target, canid_t *second_target);
-static void sync_status(unsigned int flag);
+
+static void set_target_filter(int socket);
 
 // 桁数ビット変換関数
 static unsigned char digit_to_bit(const unsigned int digit) {
@@ -89,71 +90,122 @@ static void set_target(canid_t *first_target, canid_t *second_target) {
   }
 }
 
-// 受信状況表示関数
-static void sync_status(unsigned int flag) {
-  for (unsigned int i = 1; i <= 3; i++) {
-    printf("ID %d: ", i);
-    if (flag & digit_to_bit(i)) {
-      printf("\x1b[32m");  //　文字を緑色に
-      printf("OK!!\n");
-    } else {
-      printf("\x1b[31m");  //　文字を赤色に
-      printf("NG\n");
-    }
-    printf("\x1b[0m");  //　文字をデフォルト色に
-  }
+static void set_target_filter(int socket) {
+  canid_t first_target  = 0;
+  canid_t second_target = 0;
+
+  struct can_filter rfilter[2];
+  set_target(&first_target, &second_target);
+
+  set_can_filter(&rfilter[0], first_target, CAN_SFF_MASK);
+  set_can_filter(&rfilter[1], second_target, CAN_SFF_MASK);
+  setsockopt(socket, SOL_CAN_RAW, CAN_RAW_FILTER, &rfilter, sizeof(rfilter));
 }
 
 void sync(int socket) {
-  rcv_frame_t       rcv;
-  pthread_t         thread_id;
-  struct can_filter rfilter[2];
-  int               handle;
-  int               rcv_status = 0;
-  unsigned char     send_data;
-  canid_t           first_target = 0;
-  canid_t           second_target = 0;
+  rcv_frame_t   rcv;
+  pthread_t     thread_id;
+  int           handle;
+  int           rcv_status = 0;
+  unsigned char send_data;
+  unsigned char mpu_status[3] = {0};
 
   puts("同期開始");
 
   // ターゲット設定
-  set_target(&first_target, &second_target);
-
-  // フィルタ
-  set_can_filter(&rfilter[0], first_target, CAN_SFF_MASK);
-  set_can_filter(&rfilter[1], second_target, CAN_SFF_MASK);
-  setsockopt(socket, SOL_CAN_RAW, CAN_RAW_FILTER, &rfilter, sizeof(rfilter));
+  set_target_filter(socket);
 
   // 受信確認フラグを兼ねる送信データの作成
   send_data = digit_to_bit(MPU_NUM);
 
   rcv.socket = socket;
 
-  while(1){
-    handle = pthread_create(&thread_id, NULL, (void *(*)(void *))can_read, &rcv);
+  while (1) {
+    handle =
+        pthread_create(&thread_id, NULL, (void *(*)(void *))can_read, &rcv);
     if (handle) {
       perror("pthread_create");
       exit(1);
     }
-  
+
     can_send(socket, MPU_NUM, 1, &send_data);
-  
+
     pthread_join(thread_id, (void *)&rcv_status);
     if (rcv_status) {
       puts("受信タイムアウト");
       exit(1);
     }
 
-    send_data = send_data |
-                digit_to_bit((canid_t)rcv.frame.can_id);  // 受信確認フラグを更新
-  
+    send_data =
+        send_data |
+        digit_to_bit((canid_t)rcv.frame.can_id);  // 受信確認フラグを更新
+
     // 受信できたものはフィルタから削除する（予定）
-  
-    sync_status(send_data);
+    mpu_status[MPU_NUM - 1]          = send_data;
+    mpu_status[rcv.frame.can_id - 1] = rcv.frame.data[0];
 
     // 自機の受信状況と他の受信状況を確認することで、送信漏れを防ぐ
-    if ((send_data == ALL_RECEIVED) && (rcv.frame.data[0] == ALL_RECEIVED)){
+    if ((mpu_status[0] == ALL_RECEIVED) && (mpu_status[1] == ALL_RECEIVED) &&
+        (mpu_status[2] == ALL_RECEIVED)) {
       puts("同期完了！");
+      break;
+    }
+  }
+}
+
+void sync_data(int socket, unsigned int *res_data) {
+  rcv_frame_t   rcv;
+  pthread_t     thread_id;
+  int           handle;
+  int           rcv_status = 0;
+  unsigned char send_data[5];
+  unsigned char mpu_status[3] = {0};
+
+  puts("演算結果送受信開始");
+
+  // ターゲット設定
+  set_target_filter(socket);
+
+  // 受信確認フラグを兼ねる送信データの作成
+  send_data[0] = digit_to_bit(MPU_NUM);
+  send_data[1] = (unsigned char)(res_data[MPU_NUM - 1] & 0xFF);
+  send_data[2] = (unsigned char)((res_data[MPU_NUM - 1] >> 8) & 0xFF);
+  send_data[3] = (unsigned char)((res_data[MPU_NUM - 1] >> 16) & 0xFF);
+  send_data[4] = (unsigned char)((res_data[MPU_NUM - 1] >> 24) & 0xFF);
+
+  rcv.socket = socket;
+
+  while (1) {
+    handle =
+        pthread_create(&thread_id, NULL, (void *(*)(void *))can_read, &rcv);
+    if (handle) {
+      perror("pthread_create");
+      exit(1);
+    }
+
+    can_send(socket, MPU_NUM, sizeof(send_data), send_data);
+
+    pthread_join(thread_id, (void *)&rcv_status);
+    if (rcv_status) {
+      puts("受信タイムアウト");
+      exit(1);
+    }
+
+    send_data[0] =
+        send_data[0] |
+        digit_to_bit((canid_t)rcv.frame.can_id);  // 受信確認フラグを更新
+
+    res_data[rcv.frame.can_id - 1] =
+        (unsigned int)((rcv.frame.data[4] << 24) | (rcv.frame.data[3] << 16) |
+                       (rcv.frame.data[2] << 8) | rcv.frame.data[1]);
+
+    mpu_status[MPU_NUM - 1]          = send_data[0];
+    mpu_status[rcv.frame.can_id - 1] = rcv.frame.data[0];
+
+    // 自機の受信状況と他の受信状況を確認することで、送信漏れを防ぐ
+    if ((mpu_status[0] == ALL_RECEIVED) && (mpu_status[1] == ALL_RECEIVED) &&
+        (mpu_status[2] == ALL_RECEIVED)) {
+      puts("送受信完了！");
       break;
     }
   }

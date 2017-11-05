@@ -1,5 +1,7 @@
 {
   "files.associations": {
-    "raw.h": "c"
+    "raw.h": "c",
+    "errno.h": "c",
+    "errno-base.h": "c"
   }
 }

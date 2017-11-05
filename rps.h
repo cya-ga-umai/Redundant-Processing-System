@@ -9,4 +9,5 @@
 unsigned char MPU_NUM;
 
 void sync(int socket);
+void sync_data(int socket, unsigned int *res_data);
 #endif
