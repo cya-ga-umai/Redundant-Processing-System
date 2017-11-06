@@ -109,11 +109,10 @@ void sync(void) {
   int           rcv_status = 0;
   unsigned char send_data;
   unsigned char mpu_status[3] = {0};
-  int           socket;
 
   puts("同期開始");
 
-  socket = can_init();
+  int socket = can_init();
   // ターゲット設定
   set_target_filter(socket);
 
@@ -163,10 +162,9 @@ void sync_data(unsigned int *res_data) {
   int           rcv_status = 0;
   unsigned char send_data[5];
   unsigned char mpu_status[3] = {0};
-  int           socket;
 
   puts("演算結果送受信開始");
-  socket = can_init();
+  int socket = can_init();
 
   // ターゲット設定
   set_target_filter(socket);
@@ -214,5 +212,19 @@ void sync_data(unsigned int *res_data) {
       close(socket);
       break;
     }
+  }
+}
+
+unsigned char compare_result(unsigned int *result) {
+  if (result[0] == result[1]) {
+    if (result[0] == result[2]) {
+      return 0;
+    } else {
+      return 3;
+    }
+  } else if (result[1] == result[2]) {
+    return 1;
+  } else {
+    return 2;
   }
 }

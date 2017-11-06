@@ -10,4 +10,5 @@ unsigned char MPU_NUM;
 
 void sync(void);
 void sync_data(unsigned int *res_data);
+unsigned char compare_result(unsigned int *result);
 #endif

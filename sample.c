@@ -45,5 +45,9 @@ int main(int argc, char **argv) {
 
   printf("MPU1: %d, MPU2: %d,MPU3: %d\n", result[0], result[1], result[2]);
 
+  unsigned char check = compare_result(result);
+
+  if (!check) puts("全MPU一致！");
+
   return 0;
 }
