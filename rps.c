@@ -102,16 +102,18 @@ static void set_target_filter(int socket) {
   setsockopt(socket, SOL_CAN_RAW, CAN_RAW_FILTER, &rfilter, sizeof(rfilter));
 }
 
-void sync(int socket) {
+void sync(void) {
   rcv_frame_t   rcv;
   pthread_t     thread_id;
   int           handle;
   int           rcv_status = 0;
   unsigned char send_data;
   unsigned char mpu_status[3] = {0};
+  int           socket;
 
   puts("同期開始");
 
+  socket = can_init();
   // ターゲット設定
   set_target_filter(socket);
 
@@ -148,20 +150,23 @@ void sync(int socket) {
     if ((mpu_status[0] == ALL_RECEIVED) && (mpu_status[1] == ALL_RECEIVED) &&
         (mpu_status[2] == ALL_RECEIVED)) {
       puts("同期完了！");
+      close(socket);
       break;
     }
   }
 }
 
-void sync_data(int socket, unsigned int *res_data) {
+void sync_data(unsigned int *res_data) {
   rcv_frame_t   rcv;
   pthread_t     thread_id;
   int           handle;
   int           rcv_status = 0;
   unsigned char send_data[5];
   unsigned char mpu_status[3] = {0};
+  int           socket;
 
   puts("演算結果送受信開始");
+  socket = can_init();
 
   // ターゲット設定
   set_target_filter(socket);
@@ -206,6 +211,7 @@ void sync_data(int socket, unsigned int *res_data) {
     if ((mpu_status[0] == ALL_RECEIVED) && (mpu_status[1] == ALL_RECEIVED) &&
         (mpu_status[2] == ALL_RECEIVED)) {
       puts("送受信完了！");
+      close(socket);
       break;
     }
   }

@@ -8,6 +8,6 @@
 
 unsigned char MPU_NUM;
 
-void sync(int socket);
-void sync_data(int socket, unsigned int *res_data);
+void sync(void);
+void sync_data(unsigned int *res_data);
 #endif

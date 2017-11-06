@@ -25,7 +25,6 @@ unsigned int fibonacci(unsigned long n) {
 }
 
 int main(int argc, char **argv) {
-  int sock;
   unsigned int result[3];
 
   if (argc < 2) {
@@ -34,10 +33,7 @@ int main(int argc, char **argv) {
   }
   MPU_NUM = (unsigned char)atoi(argv[1]);
 
-  // CANの初期化
-  sock = can_init();
-
-  sync(sock);
+  sync();
 
   puts("演算開始");
   result[MPU_NUM - 1] = fibonacci(400000000);  // そこそこ処理時間のかかる演算
@@ -45,11 +41,9 @@ int main(int argc, char **argv) {
 
   printf("%d\n", result[MPU_NUM - 1]);
 
-  sync_data(sock, result);
+  sync_data(result);
 
   printf("MPU1: %d, MPU2: %d,MPU3: %d\n", result[0], result[1], result[2]);
-
-  close(sock);
 
   return 0;
 }
