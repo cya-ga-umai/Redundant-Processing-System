@@ -26,6 +26,8 @@ unsigned int fibonacci(unsigned long n) {
 
 int main(int argc, char **argv) {
   unsigned int result[3];
+  unsigned char check;
+  unsigned char debug_flag = 1;
 
   if (argc < 2) {
     puts("MPU番号を入力してください");
@@ -35,19 +37,30 @@ int main(int argc, char **argv) {
 
   sync();
 
-  puts("演算開始");
-  result[MPU_NUM - 1] = fibonacci(400000000);  // そこそこ処理時間のかかる演算
-  puts("演算終了");
+  while(1){
+    puts("演算開始");
+    result[MPU_NUM - 1] = fibonacci(400000000);  // そこそこ処理時間のかかる演算
+    puts("演算終了");
 
-  printf("%d\n", result[MPU_NUM - 1]);
+    if((MPU_NUM == 3) && (debug_flag == 1)){
+      result[MPU_NUM - 1] = 123;
+      debug_flag          = 0;
+    }
 
-  sync_data(result);
+    sync_data(result);
 
-  printf("MPU1: %d, MPU2: %d,MPU3: %d\n", result[0], result[1], result[2]);
+    printf("MPU1: %d, MPU2: %d,MPU3: %d\n", result[0], result[1], result[2]);
+  
+    check = compare_result(result);
 
-  unsigned char check = compare_result(result);
+    if(!check){
+      puts("全一致を確認！");
+      break;
+    }
 
-  if (!check) puts("全MPU一致！");
+    printf("MPU%d: 不一致を確認\n", check);
+    puts("再演算を開始");
+  }
 
   return 0;
 }
