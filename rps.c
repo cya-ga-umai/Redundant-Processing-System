@@ -110,8 +110,6 @@ void sync(void) {
   unsigned char send_data;
   unsigned char mpu_status[3] = {0};
 
-  puts("同期開始");
-
   int socket = can_init();
   // ターゲット設定
   set_target_filter(socket);
@@ -148,7 +146,6 @@ void sync(void) {
     // 自機の受信状況と他の受信状況を確認することで、送信漏れを防ぐ
     if ((mpu_status[0] == ALL_RECEIVED) && (mpu_status[1] == ALL_RECEIVED) &&
         (mpu_status[2] == ALL_RECEIVED)) {
-      puts("同期完了！");
       close(socket);
       break;
     }
@@ -163,7 +160,6 @@ void sync_data(unsigned int *res_data) {
   unsigned char send_data[5];
   unsigned char mpu_status[3] = {0};
 
-  puts("演算結果送受信開始");
   int socket = can_init();
 
   // ターゲット設定
@@ -208,7 +204,6 @@ void sync_data(unsigned int *res_data) {
     // 自機の受信状況と他の受信状況を確認することで、送信漏れを防ぐ
     if ((mpu_status[0] == ALL_RECEIVED) && (mpu_status[1] == ALL_RECEIVED) &&
         (mpu_status[2] == ALL_RECEIVED)) {
-      puts("送受信完了！");
       close(socket);
       break;
     }
